@@ -24,7 +24,26 @@ func (h *HttpHandler) SetRoutesTo(r chi.Router) {
 }
 
 func (h *HttpHandler) getAllCourses(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Get All Courses!"))
+	w.Header().Set("Content-Type", "application/json")
+
+	courses, err := h.svc.GetAllCourses(r.Context(), r.URL.Query().Get("lang"))
+	if err != nil {
+		errJSON, status := newError(err)
+		w.Write(errJSON)
+		w.WriteHeader(status)
+		return
+	}
+
+	coursesJSON, err := json.Marshal(courses)
+	if err != nil {
+		errJSON, status := newError(err)
+		w.Write(errJSON)
+		w.WriteHeader(status)
+		return
+	}
+
+	w.Write(coursesJSON)
+	w.WriteHeader(http.StatusOK)
 }
 
 func (h *HttpHandler) getLanguages(w http.ResponseWriter, r *http.Request) {

@@ -6,6 +6,12 @@ import (
 
 // --- Estructuras de la Colección 'tracks' ---
 
+// TechAvailability define la estructura de salida: una tecnología y sus niveles disponibles
+type TechAvailability struct {
+	Tech   string   `bson:"tech" json:"tech"`
+	Levels []string `bson:"levels" json:"levels"`
+}
+
 // Course (El nodo ligero que está dentro del Track)
 type Course struct {
 	CourseID    string   `bson:"course_id" json:"course_id"`

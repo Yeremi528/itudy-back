@@ -44,6 +44,20 @@ func (s *service) GetLessonByID(ctx context.Context, userID, courseID string) (L
 		return Lesson{}, fmt.Errorf("learning.GetLessonByID: %w", err)
 	}
 
+	if lesson.ID == "" {
+		s.CreateLesson(ctx, Lesson{
+			UserID:          userID,
+			CourseID:        courseID,
+			CurrentXP:       0,
+			LastLessonID:    "",
+			LessonsProgress: make(map[string]LessonProgress),
+		})
+		lesson, err = s.reportory.GetLessonByID(ctx, userID, courseID)
+		if err != nil {
+			return Lesson{}, fmt.Errorf("learning.GetLessonByID: %w", err)
+		}
+	}
+
 	return lesson, nil
 }
 

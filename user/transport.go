@@ -20,6 +20,7 @@ func (h *HttpHandler) SetRoutesTo(r chi.Router) {
 
 	r.Post("/user", h.newUser)
 	r.Get("/user", h.queryUser)
+	r.Put("/user", h.updateUser)
 
 }
 
@@ -41,6 +42,27 @@ func (h *HttpHandler) newUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
+
+}
+
+func (h *HttpHandler) updateUser(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var user User
+	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		errJSON, _ := newError(err)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(errJSON)
+		return
+	}
+	if err := h.svc.UpdateUser(r.Context(), user); err != nil {
+		errJSON, _ := newError(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write(errJSON)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 
 }
 

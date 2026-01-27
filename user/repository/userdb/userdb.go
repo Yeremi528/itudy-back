@@ -3,6 +3,7 @@ package userdb
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -35,7 +36,47 @@ func (r *Repository) CreateUser(ctx context.Context, u user.User) error {
 
 	return nil
 }
+func (r *Repository) UpdateUser(ctx context.Context, u user.User) error {
+	collection := r.db.Collection("users")
+	// 1. CORRECCIÓN DEL ID: Convertir string a ObjectID
 
+	filter := bson.M{"_id": u.ID}
+
+	// 2. CORRECCIÓN DE DATOS VACÍOS: Solo agregamos lo que tenga valor
+	updateFields := bson.M{}
+
+	// Actualizamos CoursesInfo si tiene contenido
+	if u.CoursesInfo.Active != "" || len(u.CoursesInfo.List) > 0 {
+		updateFields["courses_info"] = u.CoursesInfo
+	}
+
+	// Agrega aquí el resto de validaciones si quieres actualizar otros campos a la vez
+	// (Ejemplo: si quisieras actualizar Stats también)
+	if u.Stats != (user.Stats{}) {
+		updateFields["stats"] = u.Stats
+	}
+	// ... repetir para otros campos (Name, Email) si fuera necesario
+
+	// Si no hay nada que actualizar, salimos
+	if len(updateFields) == 0 {
+		return nil
+	}
+
+	update := bson.M{"$set": updateFields}
+
+	// 3. Ejecutar Update
+	result, err := collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return err
+	}
+
+	// Opcional: Verificar si realmente encontró el documento
+	if result.MatchedCount == 0 {
+		return fmt.Errorf("no se encontró el usuario con id %s", u.ID)
+	}
+
+	return nil
+}
 func (r *Repository) GetUser(ctx context.Context, idOrEmail string) (user.User, error) {
 	collection := r.db.Collection("users")
 

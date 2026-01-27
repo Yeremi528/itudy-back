@@ -2,7 +2,6 @@ package learningdb
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -95,7 +94,7 @@ func (r *Repository) GetLessonByID(ctx context.Context, userID, courseID string)
 		if err == mongo.ErrNoDocuments {
 			// Puedes retornar un error personalizado de dominio aquí si prefieres
 			// ej: return learning.Lesson{}, learning.ErrLessonNotFound
-			return learning.Lesson{}, errors.New("lesson not found")
+			return learning.Lesson{}, nil
 		}
 		return learning.Lesson{}, err
 	}

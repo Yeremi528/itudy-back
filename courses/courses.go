@@ -7,14 +7,14 @@ import (
 )
 
 type Service interface {
-	GetAllCourses() ([]Course, error)
+	GetAllCourses(ctx context.Context, lang string) ([]TechAvailability, error)
 	GetCourseByID(ctx context.Context, id string, lv string, lang string) (CourseByID, error)
 	GetCourseContent(courseID string) (Content, error)
 	GetLanguages(ctx context.Context) ([]Language, error)
 }
 
 type Repository interface {
-	GetAllAvailableTechs(ctx context.Context) ([]string, error)
+	GetAllAvailableTechsByLang(ctx context.Context, langCode string) ([]TechAvailability, error)
 	GetLanguages(ctx context.Context) ([]Language, error)
 	GetCoursePath(ctx context.Context, tech string, level string, lang string) (CourseByID, error)
 	GetCourseContent(ctx context.Context, courseID string, contentCollection *mongo.Collection) (Content, error)

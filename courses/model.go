@@ -7,6 +7,12 @@ import (
 	"github.com/Yeremi528/itudy-back/kit/web"
 )
 
+// TechAvailability define la estructura de salida: una tecnología y sus niveles disponibles
+type TechAvailability struct {
+	Tech   string   `bson:"tech" json:"tech"`
+	Levels []string `bson:"levels" json:"levels"`
+}
+
 type CourseByID struct {
 	Lang    string   `json:"lang"`
 	Lv      string   `json:"lv"`

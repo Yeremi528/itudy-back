@@ -21,27 +21,48 @@ func NewRepository(db *mongo.Database) *Repository {
 	}
 }
 
-// GetAllAvailableTechs utiliza 'Distinct' para encontrar todos los lenguajes/tecnologías únicas
-// disponibles en la colección 'tracks'.
-func (r *Repository) GetAllAvailableTechs(ctx context.Context) ([]string, error) {
-	// El segundo parámetro de Distinct es el nombre del campo que queremos obtener
-	collection := r.db.Collection("tracks")
+// GetAllAvailableTechsByLang filtra por idioma (ej: "es") y devuelve
+// las tecnologías con sus niveles disponibles para ese idioma.
+func (r *Repository) GetAllAvailableTechsByLang(ctx context.Context, langCode string) ([]courses.TechAvailability, error) {
+	collection := r.db.Collection("courses")
 
-	values, err := collection.Distinct(ctx, "tech", bson.D{})
+	pipeline := mongo.Pipeline{
+		// 1. FILTRAR ($match): Solo documentos que coincidan con el idioma solicitado
+		{{Key: "$match", Value: bson.D{
+			{Key: "lang", Value: langCode},
+		}}},
+
+		// 2. AGRUPAR ($group): Por tecnología, acumulando los niveles únicos
+		{{Key: "$group", Value: bson.D{
+			{Key: "_id", Value: "$tech"}, // Agrupar por 'tech' (ej: Golang)
+			{Key: "levels", Value: bson.D{
+				{Key: "$addToSet", Value: "$level"}, // Crear array de niveles sin duplicados
+			}},
+		}}},
+
+		// 3. PROYECTAR ($project): Dar formato final al JSON
+		{{Key: "$project", Value: bson.D{
+			{Key: "_id", Value: 0},       // Quitar _id interno
+			{Key: "tech", Value: "$_id"}, // Poner el nombre de la tech
+			{Key: "levels", Value: 1},    // Mantener el array de niveles
+		}}},
+
+		// 4. ORDENAR ($sort): Opcional, para que salga ordenado alfabéticamente
+		{{Key: "$sort", Value: bson.D{{Key: "tech", Value: 1}}}},
+	}
+
+	cursor, err := collection.Aggregate(ctx, pipeline)
 	if err != nil {
 		return nil, err
 	}
+	defer cursor.Close(ctx)
 
-	// Convertir el resultado de []interface{} a []string
-	techs := make([]string, len(values))
-	for i, v := range values {
-		// Asumimos que los valores del campo "tech" son strings
-		if s, ok := v.(string); ok {
-			techs[i] = s
-		}
+	var results []courses.TechAvailability
+	if err = cursor.All(ctx, &results); err != nil {
+		return nil, err
 	}
 
-	return techs, nil
+	return results, nil
 }
 
 // GetCoursePath obtiene el documento Track completo
@@ -84,17 +105,10 @@ func (r *Repository) GetCourseContent(ctx context.Context, courseID string, cont
 	// Definir el filtro
 	filter := bson.D{{"course_ref_id", courseID}}
 
-	// Loguear el valor exacto que se está buscando para debugging
-	fmt.Println("🔎 Buscando contenido para course_ref_id:", courseID)
-
 	var content Content
-	// fmt.Println(collection, "que tiene la coleccion") // Este log no es necesario
 
 	// Usar FindOne ya que solo se espera UN documento
 	err := collection.FindOne(ctx, filter).Decode(&content)
-
-	// Loguear el resultado o el error
-	fmt.Println("Contenido obtenido:", content)
 
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {

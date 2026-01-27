@@ -7,9 +7,11 @@ import "context"
 type Service interface {
 	CreateUser(ctx context.Context, user User) error
 	GetUser(ctx context.Context, idOrEmail string) (User, error)
+	UpdateUser(ctx context.Context, user User) error
 }
 
 type Repository interface {
 	CreateUser(ctx context.Context, user User) error
 	GetUser(ctx context.Context, idOrEmail string) (User, error)
+	UpdateUser(ctx context.Context, user User) error
 }

@@ -1,6 +1,9 @@
 package courses
 
-import "context"
+import (
+	"context"
+	"fmt"
+)
 
 type service struct {
 	repository Repository
@@ -10,8 +13,14 @@ func NewService(r Repository) Service {
 	return &service{repository: r}
 }
 
-func (s *service) GetAllCourses() ([]Course, error) {
-	return nil, nil
+func (s *service) GetAllCourses(ctx context.Context, lang string) ([]TechAvailability, error) {
+
+	courses, err := s.repository.GetAllAvailableTechsByLang(context.Background(), lang)
+	if err != nil {
+		return nil, fmt.Errorf("courses.GetAllCourses: %w", err)
+	}
+	return courses, nil
+
 }
 
 func (s *service) GetCourseByID(ctx context.Context, id string, lv string, lang string) (CourseByID, error) {

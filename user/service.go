@@ -31,3 +31,12 @@ func (s *service) GetUser(ctx context.Context, idOrEmail string) (User, error) {
 
 	return u, nil
 }
+
+func (s *service) UpdateUser(ctx context.Context, user User) error {
+	fmt.Printf("%+v", user)
+	if err := s.repository.UpdateUser(ctx, user); err != nil {
+		return fmt.Errorf("user.UpdateUser: %w", err)
+	}
+
+	return nil
+}
