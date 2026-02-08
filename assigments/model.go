@@ -11,41 +11,41 @@ import (
 )
 
 type Worker struct {
-	ID                 string             `json:"_id"`
-	Nombre             string             `json:"nombre"`
-	Apellido           string             `json:"apellido"`
-	Contacto           Contacto           `json:"contacto"`
-	PerfilTecnico      PerfilTecnico      `json:"perfil_tecnico"`
-	DisponibilidadBase DisponibilidadBase `json:"disponibilidad_base"`
-	Estado             string             `json:"estado"`
-	FechaIngreso       time.Time          `json:"fecha_ingreso"`
+	ID                 string             `json:"_id" bson:"_id"`
+	Nombre             string             `json:"nombre" bson:"nombre"`
+	Apellido           string             `json:"apellido" bson:"apellido"`
+	Contacto           Contacto           `json:"contacto" bson:"contacto"`
+	PerfilTecnico      PerfilTecnico      `json:"perfil_tecnico" bson:"perfil_tecnico"`
+	DisponibilidadBase DisponibilidadBase `json:"disponibilidad_base" bson:"disponibilidad_base"`
+	Estado             string             `json:"estado" bson:"estado"`
+	FechaIngreso       time.Time          `json:"fecha_ingreso" bson:"fecha_ingreso"`
 }
 
 type AssignmentTest struct {
-	ID              string    `json:"_id" bson:"_id"`
-	WorkerID        string    `json:"worker_id" bson:"worker_id"`
-	TestID          string    `json:"test_id" bson:"test_id"`
-	DuracionMinutos int       `json:"duracion_minutos" bson:"duracion_minutos"`
-	FechaAsignacion time.Time `json:"fecha_asignacion" bson:"fecha_asignacion"`
-	Estado          string    `json:"estado" bson:"estado"`
+	ID              string    `json:"ID" bson:"_id"`
+	WorkerID        string    `json:"workerID" bson:"worker_id"`
+	UserID          string    `json:"userID" bson:"user_id"`
+	TestID          string    `json:"testID" bson:"test_id"`
+	FechaAsignacion time.Time `json:"date" bson:"fecha_asignacion"`
+	Estado          string    `json:"state" bson:"estado"`
 }
 
 type Contacto struct {
-	Email    string `json:"email"`
-	Telefono string `json:"telefono"`
+	Email    string `json:"email" bson:"email"`
+	Telefono string `json:"telefono" bson:"telefono"`
 }
 
 type PerfilTecnico struct {
-	Tech  []string `json:"tech"`
-	Level string   `json:"level"`
-	Score float64  `json:"score"`
+	Tech  []string `json:"tech" bson:"tech"`
+	Level string   `json:"level" bson:"level"`
+	Score float64  `json:"score" bson:"score"`
 }
 
 type DisponibilidadBase struct {
-	Tipo           string `json:"tipo"`
-	MinutosDiarios int    `json:"minutos_diarios"`
-	DiasLaborales  []int  `json:"dias_laborales"`
-	ZonaHoraria    string `json:"zona_horaria"`
+	Tipo           string `json:"tipo" bson:"tipo"`
+	MinutosDiarios int    `json:"minutos_diarios" bson:"minutos_diarios"`
+	DiasLaborales  []int  `json:"dias_laborales" bson:"dias_laborales"`
+	ZonaHoraria    string `json:"zona_horaria" bson:"zona_horaria"`
 }
 
 type ErrorResponse struct {

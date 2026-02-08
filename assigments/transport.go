@@ -16,8 +16,9 @@ func MakeHandlerWith(svc Service) *HttpHandler {
 }
 
 func (h *HttpHandler) SetRoutesTo(r chi.Router) {
-	r.Post("/assignments/availables", h.assignmentsAvailables)
-	r.Get("/assignments/task/{byUserID}", h.taskByUserID)
+	r.Get("/assignments/availables", h.assignmentsAvailables)
+	r.Get("/assignments", h.taskByUserID)
+	r.Post("/assignments", h.CreateAssignmentsByUserID)
 
 }
 
@@ -49,4 +50,48 @@ func (h *HttpHandler) assignmentsAvailables(w http.ResponseWriter, r *http.Reque
 
 func (h *HttpHandler) taskByUserID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
+	userID := r.URL.Query().Get("userID")
+	AssignmentTestByUserID, err := h.svc.AssignmentTestByUserID(r.Context(), userID)
+	if err != nil {
+		errJSON, status := newError(err)
+		w.Write(errJSON)
+		w.WriteHeader(status)
+		return
+	}
+
+	AssignmentTestByUserIDJSON, err := json.Marshal(AssignmentTestByUserID)
+	if err != nil {
+		errJSON, status := newError(err)
+		w.Write(errJSON)
+		w.WriteHeader(status)
+		return
+	}
+
+	w.Write(AssignmentTestByUserIDJSON)
+	w.WriteHeader(http.StatusOK)
+
+}
+
+func (h *HttpHandler) CreateAssignmentsByUserID(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var newAssignment AssignmentTest
+	err := json.NewDecoder(r.Body).Decode(&newAssignment)
+	if err != nil {
+		errJSON, status := newError(err)
+		w.Write(errJSON)
+		w.WriteHeader(status)
+		return
+	}
+
+	err = h.svc.CreateAssignmentsByUserID(r.Context(), newAssignment)
+	if err != nil {
+		errJSON, status := newError(err)
+		w.Write(errJSON)
+		w.WriteHeader(status)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
 }

@@ -9,6 +9,8 @@ import (
 	"runtime"
 	"syscall"
 
+	assignments "github.com/Yeremi528/itudy-back/assigments"
+	assigmentsdb "github.com/Yeremi528/itudy-back/assigments/repository/asigments"
 	"github.com/Yeremi528/itudy-back/courses"
 	"github.com/Yeremi528/itudy-back/courses/repository/coursesdb"
 	"github.com/Yeremi528/itudy-back/kit/logger"
@@ -70,9 +72,10 @@ func run(ctx context.Context, log *logger.Logger) error {
 	// Repositories
 
 	var (
-		coursesRepository  = coursesdb.NewRepository(db)
-		userRepository     = userdb.NewRepository(db)
-		learningRepository = learningdb.NewRepository(db)
+		coursesRepository     = coursesdb.NewRepository(db)
+		userRepository        = userdb.NewRepository(db)
+		learningRepository    = learningdb.NewRepository(db)
+		assignmentsRepository = assigmentsdb.NewRepository(db)
 	)
 
 	// -----------------------------------------------------------------------
@@ -85,6 +88,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 		oauthService    = oauth.NewService(oauth.Config{
 			GoogleClientID: "947017986235-hjvh14vf1mnh04drpnpvapav5bh2oqh7.apps.googleusercontent.com",
 		}, userService)
+		assigmentsService = assignments.NewService(assignmentsRepository)
 	)
 
 	// -----------------------------------------------------------------------
@@ -113,6 +117,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 	user.MakeHandlerWith(userService).SetRoutesTo(r)
 	learning.MakeHandlerWith(learningService).SetRoutesTo(r)
 	oauth.MakeHandlerWith(oauthService).SetRoutesTo(r)
+	assignments.MakeHandlerWith(assigmentsService).SetRoutesTo(r)
 
 	// -------------------------------------------------------------------------
 	// HTTP App Server
