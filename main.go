@@ -13,18 +13,25 @@ import (
 	assigmentsdb "github.com/Yeremi528/itudy-back/assigments/repository/asigments"
 	"github.com/Yeremi528/itudy-back/courses"
 	"github.com/Yeremi528/itudy-back/courses/repository/coursesdb"
+	"github.com/Yeremi528/itudy-back/email"
+	"github.com/Yeremi528/itudy-back/exam"
+	"github.com/Yeremi528/itudy-back/exam/repository/examdb"
 	"github.com/Yeremi528/itudy-back/kit/logger"
 	db "github.com/Yeremi528/itudy-back/kit/mongo"
 	"github.com/Yeremi528/itudy-back/kit/secretmanager"
 	"github.com/Yeremi528/itudy-back/kit/tracer"
 	"github.com/Yeremi528/itudy-back/learning"
 	"github.com/Yeremi528/itudy-back/learning/repository/learningdb"
+	"github.com/Yeremi528/itudy-back/movements/repository/movementsdb"
 	"github.com/Yeremi528/itudy-back/oauth"
+	"github.com/Yeremi528/itudy-back/payin"
+	"github.com/Yeremi528/itudy-back/payin/repository/payindb"
 	"github.com/Yeremi528/itudy-back/user"
 	"github.com/Yeremi528/itudy-back/user/repository/userdb"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/resend/resend-go/v2"
 )
 
 var build = "dev"
@@ -50,7 +57,7 @@ func main() {
 func run(ctx context.Context, log *logger.Logger) error {
 
 	sm, err := secretmanager.New(ctx, secretmanager.Config{
-		ProjectID: os.Getenv("PROJECT_ID"),
+		ProjectID: "itudy-485221",
 	})
 	if err != nil {
 		return err
@@ -63,23 +70,41 @@ func run(ctx context.Context, log *logger.Logger) error {
 
 	// -----------------------------------------------------------------------
 	// init DB
-	db, err := db.ConnectMongo()
+	db, err := db.ConnectMongo(cfg.Mongo.Conexion)
 	if err != nil {
 		return err
 	}
 
 	// -----------------------------------------------------------------------
+	// Resend
+	clientResend := resend.NewClient(cfg.Resend.APIKEY)
+
+	// -----------------------------------------------------------------------
 	// Repositories
 
 	var (
-		coursesRepository     = coursesdb.NewRepository(db)
-		userRepository        = userdb.NewRepository(db)
-		learningRepository    = learningdb.NewRepository(db)
-		assignmentsRepository = assigmentsdb.NewRepository(db)
+		coursesRepository             = coursesdb.NewRepository(db)
+		userRepository                = userdb.NewRepository(db)
+		learningRepository            = learningdb.NewRepository(db)
+		assignmentsRepository         = assigmentsdb.NewRepository(db)
+		assignmentsRepositoryFlexible = assigmentsdb.NewRepositoryFlexible(db)
+		examReposotory                = examdb.NewRepository(db)
+		payinRepository               = payindb.New(db)
+		movementsRepository           = movementsdb.NewRepository(db)
 	)
 
 	// -----------------------------------------------------------------------
 	// Services
+	emailService := email.NewService(clientResend)
+
+	payinService, err := payin.NewService(payinRepository, movementsRepository, assignmentsRepositoryFlexible, payin.Config{
+		MercadoPago: payin.MercadoPagoConfig{
+			AccessToken: cfg.MercadoPago.AccessToken,
+		},
+	}, emailService)
+	if err != nil {
+		return fmt.Errorf("erro al inicializar payin: %w", err)
+	}
 
 	var (
 		coursesService  = courses.NewService(coursesRepository)
@@ -88,7 +113,8 @@ func run(ctx context.Context, log *logger.Logger) error {
 		oauthService    = oauth.NewService(oauth.Config{
 			GoogleClientID: "947017986235-hjvh14vf1mnh04drpnpvapav5bh2oqh7.apps.googleusercontent.com",
 		}, userService)
-		assigmentsService = assignments.NewService(assignmentsRepository)
+		examService       = exam.NewService(examReposotory, userRepository)
+		assigmentsService = assignments.NewService(assignmentsRepository, payinService, examService)
 	)
 
 	// -----------------------------------------------------------------------
@@ -118,6 +144,8 @@ func run(ctx context.Context, log *logger.Logger) error {
 	learning.MakeHandlerWith(learningService).SetRoutesTo(r)
 	oauth.MakeHandlerWith(oauthService).SetRoutesTo(r)
 	assignments.MakeHandlerWith(assigmentsService).SetRoutesTo(r)
+	exam.NewHttpHandler(examService).SetRoutesTo(r)
+	payin.MakeHandlerWith(payinService).SetRoutesTo(r)
 
 	// -------------------------------------------------------------------------
 	// HTTP App Server

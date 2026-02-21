@@ -5,14 +5,21 @@ import (
 	"fmt"
 	"sort"
 	"time"
+
+	"github.com/Yeremi528/itudy-back/exam"
+	"github.com/Yeremi528/itudy-back/payin"
 )
+
+var vacio = ""
 
 type service struct {
 	repository Repository
+	payinSrv   payin.Service
+	examSrv    exam.Service
 }
 
-func NewService(r Repository) Service {
-	return &service{repository: r}
+func NewService(r Repository, payinSrv payin.Service, examSrv exam.Service) Service {
+	return &service{repository: r, payinSrv: payinSrv, examSrv: examSrv}
 }
 
 func (s *service) AssignmentsAvailables(ctx context.Context, tech, level string) ([]AssignmentTest, error) {
@@ -130,12 +137,20 @@ func (s *service) AssignmentTestByUserID(ctx context.Context, userID string) ([]
 
 }
 
-func (s *service) CreateAssignmentsByUserID(ctx context.Context, assignment AssignmentTest) error {
-	err := s.repository.CreateAssignment(ctx, assignment)
+func (s *service) CreateAssignmentsByUserID(ctx context.Context, assignment AssignmentTest) (string, error) {
+
+	IDAssignment, err := s.repository.CreateAssignment(ctx, assignment)
 	if err != nil {
-		return fmt.Errorf("assignments.CreateAssignmentsByUserID: %w", err)
+		return vacio, fmt.Errorf("assignments.CreateAssignmentsByUserID: %w", err)
 	}
-	return nil
+
+	exam := s.examSrv.ExambyID(ctx, assignment.TestID)
+
+	link, err := s.payinSrv.RechargeLink(ctx, assignment.UserID, IDAssignment, exam.Title, exam.Price)
+	if err != nil {
+		return vacio, fmt.Errorf("assignments.RechargeLink: %w", err)
+	}
+	return link, nil
 }
 
 //////////////////////////////////////////////////////////////

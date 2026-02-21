@@ -1,4 +1,4 @@
-package user
+package payin
 
 import (
 	"encoding/json"
@@ -8,37 +8,50 @@ import (
 	"time"
 
 	"github.com/Yeremi528/itudy-back/kit/web"
+	"github.com/Yeremi528/itudy-back/movements"
+	"github.com/google/uuid"
 )
 
-type UserCoursesInfo struct {
-	Active string           `json:"active" bson:"active,omitempty"`
-	List   []EnrolledCourse `json:"list" bson:"list,omitempty"`
+type Pay struct {
+	Email  string
+	Amount float64
 }
 
-type EnrolledCourse struct {
-	ID          string  `json:"ID" bson:"_id"`
-	Name        string  `json:"name,omitempty" bson:"name,omitempty"`
-	Progress    float64 `json:"progress,omitempty" bson:"progress,omitempty"`
-	IsCompleted bool    `json:"is_completed,omitempty" bson:"is_completed,omitempty"`
+type MPWebhookBody struct {
+	Action string `json:"action"`
+	Type   string `json:"type"`
+	Data   struct {
+		ID string `json:"id"`
+	} `json:"data"`
 }
 
-type Stats struct {
-	TotalXP       int    `json:"total_xp" bson:"total_xp,omitempty"`
-	StreakDays    int    `json:"streak_days" bson:"streak_days,omitempty"`
-	CurrentLeague string `json:"current_league" bson:"current_league,omitempty"`
+type MercadoPago struct {
+	ID    string
+	Topic string
+	Email string
+	State int
 }
 
-type User struct {
-	ID             string          `json:"id" bson:"_id"`
-	Email          string          `json:"email" bson:"email,omitempty"`
-	Name           string          `json:"name" bson:"name,omitempty"`
-	Phone          string          `json:"phone,omitempty" bson:"phone,omitempty"`
-	Country        string          `json:"country" bson:"country,omitempty"`
-	NativeLanguage string          `json:"native_language" bson:"native_language,omitempty"`
-	ImageURL       string          `json:"image_url,omitempty" bson:"image_url,omitempty"`
-	CreatedAt      time.Time       `json:"created_at" bson:"created_at,omitempty"`
-	CoursesInfo    UserCoursesInfo `json:"courses_info,omitempty" bson:"courses_info,omitempty"`
-	Stats          Stats           `json:"stats,omitempty" bson:"stats,omitempty"`
+type response struct {
+	Data any `json:"data"`
+}
+
+func responseMobile(data any) response {
+	return response{
+		Data: data,
+	}
+}
+
+func createMovement(email string, amount float64) movements.Movement {
+	transactionID := uuid.New().String()
+	now := time.Now()
+
+	return movements.Movement{
+		Email:         email,
+		Amount:        amount,
+		TransactionID: transactionID,
+		CreatedAt:     now,
+	}
 }
 
 type ErrorResponse struct {

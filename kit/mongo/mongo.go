@@ -11,15 +11,13 @@ import (
 
 var (
 	Client *mongo.Client
-	db     *mongo.Database
 )
 
-func ConnectMongo() (*mongo.Database, error) {
+func ConnectMongo(conexion string) (*mongo.Database, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	uri := "mongodb+srv://yeremi_araya:53NnNtzQOyTkTBcG@cluster0.3vtu2jv.mongodb.net/?appName=Cluster0"
-	clientOptions := options.Client().ApplyURI(uri)
+	clientOptions := options.Client().ApplyURI(conexion)
 
 	var err error
 	Client, err = mongo.Connect(ctx, clientOptions)

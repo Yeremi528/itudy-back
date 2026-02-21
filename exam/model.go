@@ -1,4 +1,4 @@
-package user
+package exam
 
 import (
 	"encoding/json"
@@ -10,35 +10,28 @@ import (
 	"github.com/Yeremi528/itudy-back/kit/web"
 )
 
-type UserCoursesInfo struct {
-	Active string           `json:"active" bson:"active,omitempty"`
-	List   []EnrolledCourse `json:"list" bson:"list,omitempty"`
+type Exam struct {
+	ID                        string     `json:"id" bson:"_id"`
+	Title                     string     `json:"title" bson:"title"`
+	Language                  string     `json:"language" bson:"language"`
+	DifficultyLevel           string     `json:"difficultyLevel" bson:"difficulty_level"`
+	AuthorID                  string     `json:"authorId" bson:"author_id"`
+	PassingPercentage         int        `json:"passingPercentage" bson:"passing_percentage"`
+	MinPrerequisitePercentage int        `json:"minPrerequisitePercentage" bson:"min_prerequisite_percentage"`
+	DurationMinutes           int        `json:"durationMinutes" bson:"duration_minutes"`
+	Price                     int        `json:"price" bson:"price"`
+	CreatedAt                 time.Time  `json:"createdAt" bson:"created_at"`
+	UpdatedAt                 time.Time  `json:"updatedAt" bson:"updated_at"`
+	Questions                 []Question `json:"questions" bson:"questions"`
 }
 
-type EnrolledCourse struct {
-	ID          string  `json:"ID" bson:"_id"`
-	Name        string  `json:"name,omitempty" bson:"name,omitempty"`
-	Progress    float64 `json:"progress,omitempty" bson:"progress,omitempty"`
-	IsCompleted bool    `json:"is_completed,omitempty" bson:"is_completed,omitempty"`
-}
-
-type Stats struct {
-	TotalXP       int    `json:"total_xp" bson:"total_xp,omitempty"`
-	StreakDays    int    `json:"streak_days" bson:"streak_days,omitempty"`
-	CurrentLeague string `json:"current_league" bson:"current_league,omitempty"`
-}
-
-type User struct {
-	ID             string          `json:"id" bson:"_id"`
-	Email          string          `json:"email" bson:"email,omitempty"`
-	Name           string          `json:"name" bson:"name,omitempty"`
-	Phone          string          `json:"phone,omitempty" bson:"phone,omitempty"`
-	Country        string          `json:"country" bson:"country,omitempty"`
-	NativeLanguage string          `json:"native_language" bson:"native_language,omitempty"`
-	ImageURL       string          `json:"image_url,omitempty" bson:"image_url,omitempty"`
-	CreatedAt      time.Time       `json:"created_at" bson:"created_at,omitempty"`
-	CoursesInfo    UserCoursesInfo `json:"courses_info,omitempty" bson:"courses_info,omitempty"`
-	Stats          Stats           `json:"stats,omitempty" bson:"stats,omitempty"`
+// Question representa cada pregunta dentro del arreglo de questions
+type Question struct {
+	QuestionID         string   `json:"questionId" bson:"question_id"`
+	Type               string   `json:"type" bson:"type"`
+	Text               string   `json:"text" bson:"text"`
+	Options            []string `json:"options" bson:"options"`
+	CorrectOptionIndex int      `json:"correctOptionIndex" bson:"correct_option_index"`
 }
 
 type ErrorResponse struct {

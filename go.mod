@@ -9,6 +9,9 @@ require (
 	github.com/go-chi/chi/v5 v5.2.3
 	github.com/go-chi/cors v1.2.2
 	github.com/google/uuid v1.6.0
+	github.com/mercadopago/sdk-go v1.8.0
+	github.com/resend/resend-go/v2 v2.28.0
+	github.com/showa-93/go-mask v0.6.2
 	github.com/spf13/viper v1.21.0
 	go.mongodb.org/mongo-driver v1.17.7
 	google.golang.org/api v0.262.0

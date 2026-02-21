@@ -13,8 +13,11 @@ import (
 )
 
 type Config struct {
-	Web   WebConfig   `yaml:"API"`
-	Debug DebugConfig `yaml:"DEBUG"`
+	Web         WebConfig    `yaml:"API"`
+	Debug       DebugConfig  `yaml:"DEBUG"`
+	MercadoPago MPConfig     `yaml:"MERCADO_PAGO"`
+	Resend      ResendConfig `yaml:"RESEND"`
+	Mongo       MongoConfig  `yaml:"MONGO"`
 }
 
 type WebConfig struct {
@@ -32,6 +35,18 @@ type DebugConfig struct {
 	ShutdownTimeout time.Duration `validate:"required" yaml:"SHUTDOWN_TIMEOUT"`
 }
 
+type ResendConfig struct {
+	APIKEY string `yaml:"APIKEY"`
+}
+
+type MPConfig struct {
+	AccessToken string `yaml:"ACCESS_TOKEN"`
+}
+
+type MongoConfig struct {
+	Conexion string `yaml:"CONEXION"`
+}
+
 func loadConfig(ctx context.Context, sm *secretmanager.Client) (Config, error) {
 	var config Config
 	var configData []byte
@@ -47,7 +62,7 @@ func loadConfig(ctx context.Context, sm *secretmanager.Client) (Config, error) {
 		}
 	} else {
 		// Cargar desde el secret manager
-		secret, err := sm.GetSecret(ctx, "session")
+		secret, err := sm.GetSecret(ctx, "ITUDY")
 		if err != nil {
 			return Config{}, err
 		}

@@ -52,6 +52,16 @@ type ErrorResponse struct {
 	ErrorMessage string `json:"error"`
 }
 
+type response struct {
+	Data any `json:"data"`
+}
+
+func responseMobile(data any) response {
+	return response{
+		Data: data,
+	}
+}
+
 func newError(err error) ([]byte, int) {
 	var status int
 	switch {

@@ -6,10 +6,21 @@ import (
 	"time"
 
 	assignments "github.com/Yeremi528/itudy-back/assigments"
+	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
+
+type RepositoryFlexible struct {
+	assignmentsCollection *mongo.Collection
+}
+
+func NewRepositoryFlexible(db *mongo.Database) *RepositoryFlexible {
+	assignmentsCollection := db.Collection("assignments")
+
+	return &RepositoryFlexible{assignmentsCollection: assignmentsCollection}
+}
 
 type Repository struct {
 	assignmentsCollection *mongo.Collection
@@ -117,8 +128,8 @@ func (r *Repository) AssignmentTestByUserID(ctx context.Context, userID string) 
 	return results, nil
 }
 
-func (r *Repository) CreateAssignment(ctx context.Context, assignment assignments.AssignmentTest) error {
-
+func (r *Repository) CreateAssignment(ctx context.Context, assignment assignments.AssignmentTest) (string, error) {
+	ID := uuid.New().String()
 	// 1. Convertimos la fecha time.Time a STRING ISO-8601
 	// Esto asegura que se guarde igual que los otros registros: "2026-02-11T16:30:00Z"
 	dateStr := assignment.FechaAsignacion.UTC().Format("2006-01-02T15:04:05Z")
@@ -126,20 +137,31 @@ func (r *Repository) CreateAssignment(ctx context.Context, assignment assignment
 	// 2. Creamos un mapa (bson.M) para tener control total de qué enviamos
 	// En lugar de enviar el struct directo, enviamos este mapa.
 	newDocument := bson.M{
+		"_id":              ID,
 		"worker_id":        assignment.WorkerID,
 		"user_id":          assignment.UserID, // Agregado según tu última foto
 		"test_id":          assignment.TestID,
 		"fecha_asignacion": dateStr, // <--- AQUÍ ESTÁ EL CAMBIO (String)
-		"estado":           assignment.Estado,
-	}
-
-	// 3. Manejo opcional del ID
-	// Si tu struct ya trae un ID generado, lo usas. Si no, Mongo lo crea solo.
-	if assignment.ID != "" {
-		newDocument["_id"] = assignment.ID
+		"estado":           "PENDIENTE",
 	}
 
 	// Insertamos el mapa, no el struct
 	_, err := r.assignmentsCollection.InsertOne(ctx, newDocument)
-	return err
+	return ID, err
+}
+
+func (r *RepositoryFlexible) UpdateAssignment(ctx context.Context, ID string) error {
+
+	update := bson.M{
+		"$set": bson.M{
+			"estado": "ACTIVO",
+		},
+	}
+
+	_, err := r.assignmentsCollection.UpdateByID(ctx, ID, update)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

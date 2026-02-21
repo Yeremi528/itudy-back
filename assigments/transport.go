@@ -85,7 +85,7 @@ func (h *HttpHandler) CreateAssignmentsByUserID(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	err = h.svc.CreateAssignmentsByUserID(r.Context(), newAssignment)
+	linkPago, err := h.svc.CreateAssignmentsByUserID(r.Context(), newAssignment)
 	if err != nil {
 		errJSON, status := newError(err)
 		w.Write(errJSON)
@@ -93,5 +93,14 @@ func (h *HttpHandler) CreateAssignmentsByUserID(w http.ResponseWriter, r *http.R
 		return
 	}
 
+	bytes, err := json.Marshal(responseMobile(linkPago))
+	if err != nil {
+		errJSON, status := newError(err)
+		w.Write(errJSON)
+		w.WriteHeader(status)
+		return
+	}
+
+	w.Write(bytes)
 	w.WriteHeader(http.StatusCreated)
 }
