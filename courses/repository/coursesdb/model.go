@@ -23,11 +23,12 @@ type Course struct {
 	TopicTags   []string `bson:"topic_tags" json:"topic_tags"`
 }
 type Language struct {
-	ID       string `bson:"_id,omitempty"`
-	Code     string `bson:"code"`
-	Name     string `bson:"name"`
-	Flag     string `bson:"flag"`
-	IsActive bool   `bson:"is_active"`
+	ID        string   `bson:"_id,omitempty"`
+	Code      string   `bson:"code"`
+	Name      string   `bson:"name"`
+	Flag      string   `bson:"flag"`
+	IsActive  bool     `bson:"is_active"`
+	TechStack []string `bson:"tech_stack,omitempty"`
 }
 
 // Track (El documento principal que contiene el path de cursos)
@@ -51,6 +52,10 @@ type Exercise struct {
 	Options            []string `bson:"options" json:"options"`
 	CorrectAnswerIndex int      `bson:"correct_answer_index" json:"correct_answer_index"`
 	Explanation        string   `bson:"explanation" json:"explanation"`
+	ErrorLineIndex     int      `bson:"error_line_index,omitempty" json:"error_line_index,omitempty"`
+	CorrectAnswer      string   `bson:"correct_answer,omitempty" json:"correct_answer,omitempty"`
+	AvailableBlocks    []string `bson:"available_blocks,omitempty" json:"available_blocks,omitempty"`
+	CorrectOrder       []int    `bson:"correct_order,omitempty" json:"correct_order,omitempty"`
 }
 
 // Content (El documento pesado que contiene teoría y ejercicios)
@@ -58,6 +63,7 @@ type Content struct {
 	ID             string     `bson:"_id" json:"id"`
 	CourseRefID    string     `bson:"course_ref_id" json:"course_ref_id"`
 	TheoryMarkdown string     `bson:"theory_markdown" json:"theory_markdown"`
+	CodeSnippet    string     `bson:"code_snippet" json:"code_snippet"`
 	Exercises      []Exercise `bson:"exercises" json:"exercises"`
 }
 
@@ -89,6 +95,7 @@ func contentToCourse(content Content) courses.Content {
 		ID:          content.ID,
 		CourseRefID: content.CourseRefID,
 		Theory:      content.TheoryMarkdown,
+		CodeSnippet: content.CodeSnippet,
 		Exercises: func() []courses.Exercise {
 			exercisesList := make([]courses.Exercise, len(content.Exercises))
 			for i, e := range content.Exercises {
@@ -99,6 +106,11 @@ func contentToCourse(content Content) courses.Content {
 					Options:            e.Options,
 					CorrectAnswerIndex: e.CorrectAnswerIndex,
 					Explanation:        e.Explanation,
+					CodeSnippet:        e.CodeSnippet,
+					ErrorLineIndex:     e.ErrorLineIndex,
+					CorrectAnswer:      e.CorrectAnswer,
+					AvailableBlocks:    e.AvailableBlocks,
+					CorrectOrder:       e.CorrectOrder,
 				}
 			}
 			return exercisesList
@@ -117,10 +129,11 @@ func languageToLanguage(lang []Language) []courses.Language {
 
 func courseLanguageToLanguage(lang Language) courses.Language {
 	return courses.Language{
-		ID:       lang.ID,
-		Code:     lang.Code,
-		Name:     lang.Name,
-		Flag:     lang.Flag,
-		IsActive: lang.IsActive,
+		ID:        lang.ID,
+		Code:      lang.Code,
+		Name:      lang.Name,
+		Flag:      lang.Flag,
+		IsActive:  lang.IsActive,
+		TechStack: lang.TechStack,
 	}
 }

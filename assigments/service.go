@@ -143,10 +143,10 @@ func (s *service) CreateAssignmentsByUserID(ctx context.Context, assignment Assi
 	if err != nil {
 		return vacio, fmt.Errorf("assignments.CreateAssignmentsByUserID: %w", err)
 	}
+	date := assignment.FechaAsignacion.Format("02/01/2006 15:04")
 
 	exam := s.examSrv.ExambyID(ctx, assignment.TestID)
-
-	link, err := s.payinSrv.RechargeLink(ctx, assignment.UserID, IDAssignment, exam.Title, exam.Price)
+	link, err := s.payinSrv.RechargeLink(ctx, assignment.UserID, IDAssignment, exam.Title, date, exam.Price)
 	if err != nil {
 		return vacio, fmt.Errorf("assignments.RechargeLink: %w", err)
 	}

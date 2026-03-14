@@ -20,9 +20,34 @@ func NewService(cfg Config, userService user.Service) Service {
 }
 
 func (s *service) GoogleLogin(ctx context.Context, token string) (user.User, error) {
-	payload, err := idtoken.Validate(ctx, token, s.Cfg.GoogleClientID)
+	// Pasamos "" como audience para que la librería valide firma, expiración e issuer,
+	// y nosotros validamos el Audience manualmente contra nuestros 3 Client IDs.
+	payload, err := idtoken.Validate(ctx, token, "")
 	if err != nil {
-		return user.User{}, fmt.Errorf("oauth.GoogleLogin: %w", err)
+		return user.User{}, fmt.Errorf("oauth.GoogleLogin: token inválido o expirado: %w", err)
+	}
+
+	// Validamos que el Audience del token corresponda a Web, Android o iOS
+	validAudience := false
+	for _, clientID := range s.Cfg.GoogleClientIDs {
+		// Verificamos si la Audiencia coincide. 
+		// En algunos casos de iOS/Android, el Audience es el WebClientID, pero el 'azp' (Authorized Party)
+		// es el ClientID específico de iOS o Android. Validamos ambos.
+		if payload.Audience == clientID {
+			validAudience = true
+			break
+		}
+		
+		if azp, ok := payload.Claims["azp"].(string); ok && azp == clientID {
+			validAudience = true
+			break
+		}
+	}
+
+	if !validAudience {
+		// Log para debuguear fácilmente qué Audience llegó
+		fmt.Printf("Token Audience rechazado: %s. azp: %v\n", payload.Audience, payload.Claims["azp"])
+		return user.User{}, fmt.Errorf("oauth.GoogleLogin: Client ID no autorizado (Audience: %s)", payload.Audience)
 	}
 
 	email := payload.Claims["email"].(string)
@@ -42,6 +67,12 @@ func (s *service) GoogleLogin(ctx context.Context, token string) (user.User, err
 		}
 
 		return u, nil
+	}
+
+	// Actualizar racha de días consecutivos
+	if err := s.userService.UpdateStreak(ctx, u.ID); err != nil {
+		// No bloqueamos el login por un error en la racha
+		fmt.Printf("oauth.GoogleLogin: UpdateStreak: %v\n", err)
 	}
 
 	return u, nil

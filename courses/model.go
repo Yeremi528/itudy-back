@@ -20,11 +20,12 @@ type CourseByID struct {
 	Courses []Course `json:"courses"`
 }
 type Language struct {
-	ID       string `json:"_id,omitempty"`
-	Code     string `json:"code"`
-	Name     string `json:"name"`
-	Flag     string `json:"flag"`
-	IsActive bool   `json:"isActive"`
+	ID       string   `json:"_id,omitempty"`
+	Code     string   `json:"code"`
+	Name     string   `json:"name"`
+	Flag     string   `json:"flag"`
+	IsActive bool     `json:"isActive"`
+	TechStack []string `json:"tech_stack,omitempty"`
 }
 
 type Course struct {
@@ -42,6 +43,7 @@ type Content struct {
 	ID          string     `json:"_id"`
 	CourseRefID string     `json:"course_ref_id"`
 	Theory      string     `json:"theory_markdown"`
+	CodeSnippet string     `json:"code_snippet"`
 	Exercises   []Exercise `json:"exercises"`
 }
 
@@ -52,6 +54,11 @@ type Exercise struct {
 	Options            []string `json:"options"`
 	CorrectAnswerIndex int      `json:"correct_answer_index"`
 	Explanation        string   `json:"explanation"`
+	CodeSnippet        string   `json:"code_snippet,omitempty"`
+	ErrorLineIndex     int      `json:"error_line_index,omitempty"`
+	CorrectAnswer      string   `json:"correct_answer,omitempty"`
+	AvailableBlocks    []string `json:"available_blocks,omitempty"`
+	CorrectOrder       []int    `json:"correct_order,omitempty"`
 }
 
 type ErrorResponse struct {

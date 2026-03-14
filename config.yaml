@@ -17,5 +17,7 @@ MONGO:
   CONEXION: mongodb+srv://yeremi_araya:53NnNtzQOyTkTBcG@cluster0.3vtu2jv.mongodb.net/?appName=Cluster0}
 RESEND:
   APIKEY: re_TsKMTPmd_PmuhhzXEtzw7CwxyypmdXpCW
+GCS:
+  BUCKET: itudy-profiles
 
 

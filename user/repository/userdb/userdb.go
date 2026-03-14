@@ -12,6 +12,54 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+func (r *Repository) UpdateImageURL(ctx context.Context, userID, url string) error {
+	collection := r.db.Collection("users")
+	filter := bson.M{"_id": userID}
+	update := bson.M{"$set": bson.M{"image_url": url}}
+
+	result, err := collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return err
+	}
+	if result.MatchedCount == 0 {
+		return fmt.Errorf("no se encontró el usuario con id %s", userID)
+	}
+	return nil
+}
+
+func (r *Repository) UpdateStreak(ctx context.Context, userID string, streakDays int, lastLoginAt time.Time) error {
+	collection := r.db.Collection("users")
+	filter := bson.M{"_id": userID}
+	update := bson.M{"$set": bson.M{
+		"stats.streak_days":  streakDays,
+		"stats.last_login_at": lastLoginAt,
+	}}
+
+	result, err := collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return err
+	}
+	if result.MatchedCount == 0 {
+		return fmt.Errorf("no se encontró el usuario con id %s", userID)
+	}
+	return nil
+}
+
+func (r *Repository) AddAchievement(ctx context.Context, userID string, achievement user.Achievement) error {
+	collection := r.db.Collection("users")
+	filter := bson.M{"_id": userID}
+	update := bson.M{"$push": bson.M{"achievements": achievement}}
+
+	result, err := collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return err
+	}
+	if result.MatchedCount == 0 {
+		return fmt.Errorf("no se encontró el usuario con id %s", userID)
+	}
+	return nil
+}
+
 type Repository struct {
 	db *mongo.Database
 }

@@ -4,9 +4,13 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/Yeremi528/itudy-back/email"
+	"github.com/Yeremi528/itudy-back/exam"
 	"github.com/Yeremi528/itudy-back/movements"
+	"github.com/Yeremi528/itudy-back/user"
+	"github.com/google/uuid"
 	"github.com/mercadopago/sdk-go/pkg/config"
 	"github.com/mercadopago/sdk-go/pkg/payment"
 	"github.com/mercadopago/sdk-go/pkg/preference"
@@ -20,7 +24,9 @@ type service struct {
 	mpPaymentClient     payment.Client
 	repositoryMovement  movements.Repository
 	rAssignmentFlexible repositoryAssignments
+	examService         exam.Service
 	emailService        email.Service
+	userService         userService
 }
 
 type MercadoPagoConfig struct {
@@ -31,7 +37,7 @@ type Config struct {
 	MercadoPago MercadoPagoConfig
 }
 
-func NewService(r Repository, rMovements movements.Repository, rAssignments repositoryAssignments, cfg Config, emailService email.Service) (*service, error) {
+func NewService(r Repository, rMovements movements.Repository, rAssignments repositoryAssignments, cfg Config, emailService email.Service, examService exam.Service, userSvc userService) (*service, error) {
 	cfgMercadoPago, err := config.New(cfg.MercadoPago.AccessToken)
 	if err != nil {
 		return &service{}, fmt.Errorf("error configurando Mercado Pago: %w", err)
@@ -46,11 +52,13 @@ func NewService(r Repository, rMovements movements.Repository, rAssignments repo
 		repositoryMovement:  rMovements,
 		rAssignmentFlexible: rAssignments,
 		emailService:        emailService,
+		examService:         examService,
+		userService:         userSvc,
 	}, nil
 }
 
 // Tener una segunda opción, ya que esto no era buena practica JAJ LOL XD
-func (s *service) RechargeLink(ctx context.Context, email, IDAssignment, examName string, amount int) (string, error) {
+func (s *service) RechargeLink(ctx context.Context, email, IDAssignment, examName, fechaAsignacion string, amount int) (string, error) {
 
 	request := preference.Request{
 		Items: []preference.ItemRequest{
@@ -64,6 +72,7 @@ func (s *service) RechargeLink(ctx context.Context, email, IDAssignment, examNam
 		Metadata: map[string]any{
 			"email":      email,
 			"assignment": IDAssignment,
+			"date":       fechaAsignacion,
 		},
 		BackURLs: &preference.BackURLsRequest{
 			Success: "https://colectigo-back-uwu-579390796383.southamerica-west1.run.app",
@@ -101,31 +110,50 @@ func (s *service) WebHook(ctx context.Context, ID, topic string) error {
 	case "payment":
 		pay, err := s.mpPaymentClient.Get(ctx, int(id))
 		if err != nil {
+			fmt.Println("tenemos error")
 			return fmt.Errorf("error obteniendo detalles del pago: %w", err)
 		}
-
 		// Verificamos que el pago realmente esté aprobado antes de liberar el horario
-		if pay.Status != "approved" {
-			fmt.Printf("El pago %d está en estado: %s. No se libera el horario aún.\n", id, pay.Status)
-			return nil
-		}
-
-		fmt.Println("Entramos en payments, pago aprobado!")
+		// if pay.Status != "approved" {
+		// 	fmt.Printf("El pago %d está en estado: %s. No se libera el horario aún.\n", id, pay.Status)
+		// 	return nil
+		// }
 
 		// OJO: Asegúrate de que createMovement reciba los datos correctos.
 		// Si necesitas el email, lo puedes sacar de pay.Metadata["email"]
-		user := createMovement(pay.Payer.Identification.Number, pay.TransactionDetails.TotalPaidAmount)
-		if err := s.Payin(ctx, user); err != nil {
+		movement := createMovement(pay.Payer.Identification.Number, pay.TransactionDetails.TotalPaidAmount)
+		if err := s.Payin(ctx, movement); err != nil {
 			return fmt.Errorf("payin.webhook: s.Payin: %w", err)
 		}
 
-		assignmentID := pay.Metadata["assignment"]
-		if err := s.rAssignmentFlexible.UpdateAssignment(ctx, fmt.Sprintf("%v", assignmentID)); err != nil {
+		assignmentID := fmt.Sprintf("%+v", pay.Metadata["assignment"])
+		if err := s.rAssignmentFlexible.UpdateAssignment(ctx, assignmentID); err != nil {
 			return fmt.Errorf("payin.Webhook: assignmentsFlexible.Update: %w", err)
 		}
 
-		if err := s.emailService.SendEmail(ctx, "2025-03", "geremiararaya@gmail.com", "panchito"); err != nil {
+		email := fmt.Sprintf("%+v", pay.Metadata["email"])
+		date := fmt.Sprintf("%+v", pay.Metadata["date"])
+
+		testID, err := s.rAssignmentFlexible.QueryAssignmentTestByID(ctx, assignmentID)
+		test := s.examService.ExambyID(ctx, testID)
+		fmt.Printf("%+v", test)
+
+		if err := s.emailService.SendEmail(ctx, test, date, email); err != nil {
 			fmt.Println("error al enviar el correo", err)
+		}
+
+		// Agregar logro al usuario
+		u, err := s.userService.GetUser(ctx, email)
+		if err == nil && u.ID != "" {
+			achievement := user.Achievement{
+				ID:       uuid.New().String(),
+				Title:    "Examen completado",
+				ExamName: test.Title,
+				EarnedAt: time.Now().UTC(),
+			}
+			if err := s.userService.AddAchievement(ctx, u.ID, achievement); err != nil {
+				fmt.Printf("payin.Webhook: AddAchievement: %v\n", err)
+			}
 		}
 
 		return nil

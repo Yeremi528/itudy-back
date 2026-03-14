@@ -11,6 +11,8 @@ import (
 
 	assignments "github.com/Yeremi528/itudy-back/assigments"
 	assigmentsdb "github.com/Yeremi528/itudy-back/assigments/repository/asigments"
+	"github.com/Yeremi528/itudy-back/certificates"
+	certificatesdb "github.com/Yeremi528/itudy-back/certificates/repository/certificatesdb"
 	"github.com/Yeremi528/itudy-back/courses"
 	"github.com/Yeremi528/itudy-back/courses/repository/coursesdb"
 	"github.com/Yeremi528/itudy-back/email"
@@ -19,6 +21,7 @@ import (
 	"github.com/Yeremi528/itudy-back/kit/logger"
 	db "github.com/Yeremi528/itudy-back/kit/mongo"
 	"github.com/Yeremi528/itudy-back/kit/secretmanager"
+	"github.com/Yeremi528/itudy-back/kit/storage"
 	"github.com/Yeremi528/itudy-back/kit/tracer"
 	"github.com/Yeremi528/itudy-back/learning"
 	"github.com/Yeremi528/itudy-back/learning/repository/learningdb"
@@ -76,6 +79,13 @@ func run(ctx context.Context, log *logger.Logger) error {
 	}
 
 	// -----------------------------------------------------------------------
+	// GCS Storage
+	storageClient, err := storage.New(ctx, cfg.GCS.Bucket)
+	if err != nil {
+		return fmt.Errorf("error inicializando GCS storage: %w", err)
+	}
+
+	// -----------------------------------------------------------------------
 	// Resend
 	clientResend := resend.NewClient(cfg.Resend.APIKEY)
 
@@ -91,29 +101,37 @@ func run(ctx context.Context, log *logger.Logger) error {
 		examReposotory                = examdb.NewRepository(db)
 		payinRepository               = payindb.New(db)
 		movementsRepository           = movementsdb.NewRepository(db)
+		certificatesRepository        = certificatesdb.NewRepository(db)
 	)
 
 	// -----------------------------------------------------------------------
 	// Services
 	emailService := email.NewService(clientResend)
+	examService := exam.NewService(examReposotory, userRepository)
+	userService := user.NewService(userRepository, storageClient)
 
 	payinService, err := payin.NewService(payinRepository, movementsRepository, assignmentsRepositoryFlexible, payin.Config{
 		MercadoPago: payin.MercadoPagoConfig{
 			AccessToken: cfg.MercadoPago.AccessToken,
 		},
-	}, emailService)
+	}, emailService, examService, userService)
 	if err != nil {
 		return fmt.Errorf("erro al inicializar payin: %w", err)
 	}
 
+	certificatesService := certificates.NewService(certificatesRepository, storageClient, examService, userRepository)
+
 	var (
 		coursesService  = courses.NewService(coursesRepository)
-		userService     = user.NewService(userRepository)
 		learningService = learning.NewService(learningRepository)
 		oauthService    = oauth.NewService(oauth.Config{
-			GoogleClientID: "947017986235-hjvh14vf1mnh04drpnpvapav5bh2oqh7.apps.googleusercontent.com",
+			GoogleClientIDs: []string{
+				"947017986235-hjvh14vf1mnh04drpnpvapav5bh2oqh7.apps.googleusercontent.com", // WEB
+				"947017986235-okt104uig6sboi6330rqivb3ut67lnrb.apps.googleusercontent.com", // ANDROID
+				"947017986235-q4l1k276dnidd7nqi2j0sd1cngd1jm3s.apps.googleusercontent.com", // IOS
+			},
 		}, userService)
-		examService       = exam.NewService(examReposotory, userRepository)
+
 		assigmentsService = assignments.NewService(assignmentsRepository, payinService, examService)
 	)
 
@@ -146,6 +164,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 	assignments.MakeHandlerWith(assigmentsService).SetRoutesTo(r)
 	exam.NewHttpHandler(examService).SetRoutesTo(r)
 	payin.MakeHandlerWith(payinService).SetRoutesTo(r)
+	certificates.MakeHandlerWith(certificatesService).SetRoutesTo(r)
 
 	// -------------------------------------------------------------------------
 	// HTTP App Server

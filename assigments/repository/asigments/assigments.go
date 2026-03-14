@@ -12,6 +12,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+var vacio = ""
+
 type RepositoryFlexible struct {
 	assignmentsCollection *mongo.Collection
 }
@@ -150,6 +152,22 @@ func (r *Repository) CreateAssignment(ctx context.Context, assignment assignment
 	return ID, err
 }
 
+func (r *RepositoryFlexible) QueryAssignmentTestByID(ctx context.Context, ID string) (string, error) {
+	filter := bson.M{
+		"_id": ID, // Como tu _id en la BD es un string (UUID) y no un ObjectId, esto es correcto.
+	}
+
+	var result assignments.AssignmentTest
+
+	// Usamos FindOne porque buscamos un documento único
+	err := r.assignmentsCollection.FindOne(ctx, filter).Decode(&result)
+	if err != nil {
+		// Si no encuentra nada, err será mongo.ErrNoDocuments
+		return vacio, err
+	}
+
+	return result.TestID, nil
+}
 func (r *RepositoryFlexible) UpdateAssignment(ctx context.Context, ID string) error {
 
 	update := bson.M{

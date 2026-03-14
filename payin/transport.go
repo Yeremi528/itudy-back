@@ -3,6 +3,7 @@ package payin
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -26,6 +27,7 @@ func (h *HttpHandler) payin(w http.ResponseWriter, r *http.Request) {
 	ID := r.URL.Query().Get("data.id")
 	topic := r.URL.Query().Get("type")
 
+	topic = strings.TrimSpace(topic)
 	if topic == "" || ID == "" {
 		var body MPWebhookBody
 		err := json.NewDecoder(r.Body).Decode(&body)

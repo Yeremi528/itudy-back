@@ -8,7 +8,7 @@ import (
 )
 
 type Config struct {
-	GoogleClientID string
+	GoogleClientIDs []string
 }
 
 type ErrorResponse struct {

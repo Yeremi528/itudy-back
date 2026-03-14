@@ -2,6 +2,7 @@ package user
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -23,9 +24,17 @@ type EnrolledCourse struct {
 }
 
 type Stats struct {
-	TotalXP       int    `json:"total_xp" bson:"total_xp,omitempty"`
-	StreakDays    int    `json:"streak_days" bson:"streak_days,omitempty"`
-	CurrentLeague string `json:"current_league" bson:"current_league,omitempty"`
+	TotalXP       int       `json:"total_xp" bson:"total_xp,omitempty"`
+	StreakDays    int       `json:"streak_days" bson:"streak_days,omitempty"`
+	CurrentLeague string    `json:"current_league" bson:"current_league,omitempty"`
+	LastLoginAt   time.Time `json:"last_login_at,omitempty" bson:"last_login_at,omitempty"`
+}
+
+type Achievement struct {
+	ID       string    `json:"id" bson:"_id"`
+	Title    string    `json:"title" bson:"title"`
+	ExamName string    `json:"exam_name" bson:"exam_name"`
+	EarnedAt time.Time `json:"earned_at" bson:"earned_at"`
 }
 
 type User struct {
@@ -39,10 +48,15 @@ type User struct {
 	CreatedAt      time.Time       `json:"created_at" bson:"created_at,omitempty"`
 	CoursesInfo    UserCoursesInfo `json:"courses_info,omitempty" bson:"courses_info,omitempty"`
 	Stats          Stats           `json:"stats,omitempty" bson:"stats,omitempty"`
+	Achievements   []Achievement   `json:"achievements,omitempty" bson:"achievements,omitempty"`
 }
 
 type ErrorResponse struct {
 	ErrorMessage string `json:"error"`
+}
+
+func errBadRequest(msg string) error {
+	return web.NewRequestError(fmt.Errorf("%s", msg), http.StatusBadRequest)
 }
 
 func newError(err error) ([]byte, int) {

@@ -18,6 +18,7 @@ type Config struct {
 	MercadoPago MPConfig     `yaml:"MERCADO_PAGO"`
 	Resend      ResendConfig `yaml:"RESEND"`
 	Mongo       MongoConfig  `yaml:"MONGO"`
+	GCS         GCSConfig    `yaml:"GCS"`
 }
 
 type WebConfig struct {
@@ -45,6 +46,10 @@ type MPConfig struct {
 
 type MongoConfig struct {
 	Conexion string `yaml:"CONEXION"`
+}
+
+type GCSConfig struct {
+	Bucket string `yaml:"BUCKET"`
 }
 
 func loadConfig(ctx context.Context, sm *secretmanager.Client) (Config, error) {

@@ -2,8 +2,10 @@ package email
 
 import (
 	"context"
+
+	"github.com/Yeremi528/itudy-back/exam"
 )
 
 type Service interface {
-	SendEmail(ctx context.Context, date, email, nameTest string) error
+	SendEmail(ctx context.Context, examInfo exam.Exam, date, email string) error
 }
