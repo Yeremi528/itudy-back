@@ -45,6 +45,54 @@ func (r *Repository) UpdateStreak(ctx context.Context, userID string, streakDays
 	return nil
 }
 
+func (r *Repository) IncrementXP(ctx context.Context, userID string, xp int) error {
+	collection := r.db.Collection("users")
+	filter := bson.M{"_id": userID}
+	update := bson.M{"$inc": bson.M{"stats.total_xp": xp}}
+
+	result, err := collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return err
+	}
+	if result.MatchedCount == 0 {
+		return fmt.Errorf("no se encontró el usuario con id %s", userID)
+	}
+	return nil
+}
+
+func (r *Repository) UpdateCourseProgress(ctx context.Context, userID, courseID string, progress float64, isCompleted bool) error {
+	collection := r.db.Collection("users")
+	filter := bson.M{"_id": userID, "courses_info.list._id": courseID}
+
+	update := bson.M{
+		"$set": bson.M{
+			"courses_info.list.$.progress":     progress,
+			"courses_info.list.$.is_completed": isCompleted,
+		},
+	}
+
+	result, err := collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return err
+	}
+	if result.MatchedCount == 0 {
+		// El curso aún no está en la lista → lo agregamos
+		filter2 := bson.M{"_id": userID}
+		push := bson.M{
+			"$push": bson.M{
+				"courses_info.list": bson.M{
+					"_id":          courseID,
+					"progress":     progress,
+					"is_completed": isCompleted,
+				},
+			},
+		}
+		_, err = collection.UpdateOne(ctx, filter2, push)
+		return err
+	}
+	return nil
+}
+
 func (r *Repository) AddAchievement(ctx context.Context, userID string, achievement user.Achievement) error {
 	collection := r.db.Collection("users")
 	filter := bson.M{"_id": userID}

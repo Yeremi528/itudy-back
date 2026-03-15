@@ -123,7 +123,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 
 	var (
 		coursesService  = courses.NewService(coursesRepository)
-		learningService = learning.NewService(learningRepository)
+		learningService = learning.NewService(learningRepository, userRepository)
 		oauthService    = oauth.NewService(oauth.Config{
 			GoogleClientIDs: []string{
 				"947017986235-hjvh14vf1mnh04drpnpvapav5bh2oqh7.apps.googleusercontent.com", // WEB

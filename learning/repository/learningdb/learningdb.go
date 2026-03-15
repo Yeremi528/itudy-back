@@ -37,7 +37,7 @@ func (r *Repository) CreateLesson(ctx context.Context, lesson learning.Lesson) e
 	return nil
 }
 
-func (r *Repository) CompleteLesson(ctx context.Context, userID, courseID, completedLessonID, nextLessonID string) error {
+func (r *Repository) CompleteLesson(ctx context.Context, userID, courseID, completedLessonID, nextLessonID string, totalLessons int) error {
 	collection := r.db.Collection("lessons")
 
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
@@ -45,38 +45,43 @@ func (r *Repository) CompleteLesson(ctx context.Context, userID, courseID, compl
 
 	filter := bson.M{"user_id": userID, "course_id": courseID}
 
-	// 1. Creamos el mapa de campos a actualizar
 	fieldsToUpdate := bson.M{
-		// Siempre actualizamos el puntero y la fecha
 		"last_lesson_id": nextLessonID,
 		"last_practiced": time.Now(),
-
-		// Siempre marcamos la actual como completada
 		fmt.Sprintf("lessons_progress.%s.status", completedLessonID): "completed",
 	}
 
-	// 2. Lógica de seguridad:
-	// Solo marcamos la siguiente como "active" SI es diferente a la que acabamos de terminar.
-	// Esto evita que la última lección se re-active a sí misma.
 	if completedLessonID != nextLessonID {
 		fieldsToUpdate[fmt.Sprintf("lessons_progress.%s.status", nextLessonID)] = "active"
 	}
 
-	// 3. Aplicamos el $set con el mapa dinámico
-	update := bson.M{"$set": fieldsToUpdate}
+	// Guardar total de lecciones si se conoce y aún no está guardado
+	if totalLessons > 0 {
+		fieldsToUpdate["total_lessons"] = totalLessons
+	}
 
-	opts := options.Update().SetUpsert(false)
-
-	result, err := collection.UpdateOne(ctx, filter, update, opts)
+	result, err := collection.UpdateOne(ctx, filter, bson.M{"$set": fieldsToUpdate}, options.Update().SetUpsert(false))
 	if err != nil {
 		return err
 	}
-
 	if result.MatchedCount == 0 {
 		return fmt.Errorf("no progress found for user %s in course %s", userID, courseID)
 	}
 
 	return nil
+}
+
+func (r *Repository) IncrementLessonXP(ctx context.Context, userID, courseID string, xp int) error {
+	collection := r.db.Collection("lessons")
+
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	filter := bson.M{"user_id": userID, "course_id": courseID}
+	update := bson.M{"$inc": bson.M{"current_xp": xp}}
+
+	_, err := collection.UpdateOne(ctx, filter, update)
+	return err
 }
 
 // GetLessonByID busca una lección por su ID (ej: "go_001")

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -87,7 +88,9 @@ func (h *HttpHandler) getLessonByID(w http.ResponseWriter, r *http.Request) {
 func (h *HttpHandler) updateLessonByID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	userID := r.URL.Query().Get("userID")
+	q := r.URL.Query()
+
+	userID := q.Get("userID")
 	if userID == "" {
 		errJSON, _ := newError(errors.New("missing user ID"))
 		w.WriteHeader(http.StatusBadRequest)
@@ -95,14 +98,15 @@ func (h *HttpHandler) updateLessonByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	courseID := r.URL.Query().Get("courseID")
+	courseID := q.Get("courseID")
 	if courseID == "" {
 		errJSON, _ := newError(errors.New("missing course ID"))
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(errJSON)
 		return
 	}
-	lessonID := r.URL.Query().Get("lessonID")
+
+	lessonID := q.Get("lessonID")
 	if lessonID == "" {
 		errJSON, _ := newError(errors.New("missing lesson ID"))
 		w.WriteHeader(http.StatusBadRequest)
@@ -110,7 +114,7 @@ func (h *HttpHandler) updateLessonByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	nextID := r.URL.Query().Get("nextID")
+	nextID := q.Get("nextID")
 	if nextID == "" {
 		errJSON, _ := newError(errors.New("missing next lesson ID"))
 		w.WriteHeader(http.StatusBadRequest)
@@ -118,12 +122,22 @@ func (h *HttpHandler) updateLessonByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.svc.UpdateLesson(r.Context(), userID, courseID, lessonID, nextID); err != nil {
+	totalLessons := 0
+	if raw := q.Get("totalLessons"); raw != "" {
+		if n, err := strconv.Atoi(raw); err == nil && n > 0 {
+			totalLessons = n
+		}
+	}
+
+	result, err := h.svc.UpdateLesson(r.Context(), userID, courseID, lessonID, nextID, totalLessons)
+	if err != nil {
 		errJSON, _ := newError(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write(errJSON)
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	resp, _ := json.Marshal(result)
+	w.WriteHeader(http.StatusOK)
+	w.Write(resp)
 }

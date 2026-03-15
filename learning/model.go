@@ -20,18 +20,26 @@ const (
 
 type Lesson struct {
 	ID            string    `json:"id" bson:"_id"`
-	UserID        string    `json:"user_id" bson:"user_id"`     // Referencia a user
-	CourseID      string    `json:"course_id" bson:"course_id"` // Referencia a courses
+	UserID        string    `json:"user_id" bson:"user_id"`
+	CourseID      string    `json:"course_id" bson:"course_id"`
 	CurrentXP     int       `json:"current_xp" bson:"current_xp"`
+	TotalLessons  int       `json:"total_lessons" bson:"total_lessons"`
 	LastLessonID  string    `json:"last_lesson_id" bson:"last_lesson_id"`
 	LastPracticed time.Time `json:"last_practiced" bson:"last_practiced"`
 
-	// Aquí guardas el detalle de cada lección dentro de ESTE curso
 	LessonsProgress map[string]LessonProgress `json:"lessons_progress" bson:"lessons_progress"`
 }
 
 type LessonProgress struct {
 	Status LessonStatus `json:"status"`
+}
+
+// LessonUpdateResult es la respuesta que recibe la app al completar una lección.
+type LessonUpdateResult struct {
+	XPEarned   int     `json:"xp_earned"`
+	TotalXP    int     `json:"total_xp"`
+	Progress   float64 `json:"progress"`
+	IsCompleted bool   `json:"is_completed"`
 }
 
 type ErrorResponse struct {

@@ -29,4 +29,6 @@ type Repository interface {
 	UpdateImageURL(ctx context.Context, userID, url string) error
 	UpdateStreak(ctx context.Context, userID string, streakDays int, lastLoginAt time.Time) error
 	AddAchievement(ctx context.Context, userID string, achievement Achievement) error
+	IncrementXP(ctx context.Context, userID string, xp int) error
+	UpdateCourseProgress(ctx context.Context, userID, courseID string, progress float64, isCompleted bool) error
 }
